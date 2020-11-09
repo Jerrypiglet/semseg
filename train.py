@@ -192,26 +192,38 @@ def main_worker(gpu, ngpus_per_node, argss):
     mean = [item * value_scale for item in mean]
     std = [0.229, 0.224, 0.225]
     std = [item * value_scale for item in std]
-
-    train_transform = transform.Compose([
+    
+    transform_list_train = []
+    if args.resize:
+        transform_list_train.append(transform.Resize((args.resize_h, args.resize_w)))
+    transform_list_train += [
         transform.RandScale([args.scale_min, args.scale_max]),
         transform.RandRotate([args.rotate_min, args.rotate_max], padding=mean, ignore_label=args.ignore_label),
         transform.RandomGaussianBlur(),
         transform.RandomHorizontalFlip(),
         transform.Crop([args.train_h, args.train_w], crop_type='rand', padding=mean, ignore_label=args.ignore_label),
         transform.ToTensor(),
-        transform.Normalize(mean=mean, std=std)])
+        transform.Normalize(mean=mean, std=std)
+    ]
+    train_transform = transform.Compose(transform_list_train)
     train_data = dataset.SemData(split='train', data_root=args.data_root, data_list=args.train_list, transform=train_transform)
     if args.distributed:
         train_sampler = torch.utils.data.distributed.DistributedSampler(train_data)
     else:
         train_sampler = None
     train_loader = torch.utils.data.DataLoader(train_data, batch_size=args.batch_size, shuffle=(train_sampler is None), num_workers=args.workers, pin_memory=True, sampler=train_sampler, drop_last=True)
+
+
     if args.evaluate:
-        val_transform = transform.Compose([
+        transform_list_val = []
+        if args.resize:
+            transform_list_val.append(transform.Resize((args.resize_h, args.resize_w)))
+        transform_list_val += [
             transform.Crop([args.train_h, args.train_w], crop_type='center', padding=mean, ignore_label=args.ignore_label),
             transform.ToTensor(),
-            transform.Normalize(mean=mean, std=std)])
+            transform.Normalize(mean=mean, std=std)
+            ]
+        val_transform = transform.Compose(transform_list_val)
         val_data = dataset.SemData(split='val', data_root=args.data_root, data_list=args.val_list, transform=val_transform)
         if args.distributed:
             val_sampler = torch.utils.data.distributed.DistributedSampler(val_data)
@@ -394,6 +406,7 @@ def validate(val_loader, model, criterion, args):
                 image_path = image_paths[sample_idx]
                 # image_name = image_path.split('/')[-1].split('.')[0]
                 print(color_GT.shape, color_GT.dtype, color_pred.shape, color_pred.dtype, image_path)
+                print(np.amax(color_GT), np.amin(color_GT), np.median(color_GT))
                 # gray_path = os.path.join(gray_folder, image_name + '.png')
                 # color_path = os.path.join(color_folder, image_name + '.png')
                 # cv2.imwrite(gray_path, gray)
