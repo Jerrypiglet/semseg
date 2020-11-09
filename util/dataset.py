@@ -4,6 +4,7 @@ import cv2
 import numpy as np
 
 from torch.utils.data import Dataset
+import torch
 
 
 IMG_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.ppm', '.bmp', '.pgm']
@@ -52,6 +53,7 @@ def make_dataset(split='train', data_root=None, data_list=None):
 class SemData(Dataset):
     def __init__(self, split='train', data_root=None, data_list=None, transform=None):
         self.split = split
+        self.data_root = data_root
         self.data_list = make_dataset(split, data_root, data_list)
         self.transform = transform
 
@@ -60,6 +62,7 @@ class SemData(Dataset):
 
     def __getitem__(self, index):
         image_path, label_path = self.data_list[index]
+        # print(image_path)
         image = cv2.imread(image_path, cv2.IMREAD_COLOR)  # BGR 3 channel ndarray wiht shape H * W * 3
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)  # convert cv2 read image from BGR order to RGB order
         image = np.float32(image)
@@ -68,4 +71,28 @@ class SemData(Dataset):
             raise (RuntimeError("Image & label shape mismatch: " + image_path + " " + label_path + "\n"))
         if self.transform is not None:
             image, label = self.transform(image, label)
-        return image, label
+            # print(torch.amax(label), torch.amin(label), self.data_root, '-------')
+            if 'scannet' in self.data_root:
+                label = nyu40_to_scannet20(label)
+                label[label > 20] = 0
+        return image, label, image_path
+
+def nyu40_to_scannet20(label):
+	"""Remap a label image from the 'nyu40' class palette to the 'scannet20' class palette """
+
+	# Ignore indices 13, 15, 17, 18, 19, 20, 21, 22, 23, 25, 26. 27. 29. 30. 31. 32, 35. 37. 38, 40
+	# Because, these classes from 'nyu40' are absent from 'scannet20'. Our label files are in 
+	# 'nyu40' format, hence this 'hack'. To see detailed class lists visit:
+	# http://kaldir.vc.in.tum.de/scannet_benchmark/labelids_all.txt ('nyu40' labels)
+	# http://kaldir.vc.in.tum.de/scannet_benchmark/labelids.txt ('scannet20' labels)
+	# The remaining labels are then to be mapped onto a contiguous ordering in the range [0,20]
+
+	# The remapping array comprises tuples (src, tar), where 'src' is the 'nyu40' label, and 'tar' is the 
+	# corresponding target 'scannet20' label
+	remapping = [(0,0),(13,0),(15,0),(17,0),(18,0),(19,0),(20,0),(21,0),(22,0),(23,0),(25,0),(26,0),(27,0),
+				(29,0),(30,0),(31,0),(32,0),(35,0),(37,0),(38,0),(40,0),(14,13),(16,14),(24,15),(28,16),(33,17),
+				(34,18),(36,19),(39,20)]
+	for src, tar in remapping:
+		label[label==src] = tar
+	return label
+

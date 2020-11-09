@@ -1,5 +1,5 @@
 DATA:
-  data_root: dataset/cityscapes
+  data_root: dataset/scannet
   train_list: dataset/cityscapes/list/fine_train.txt
   val_list: dataset/cityscapes/list/fine_val.txt
   classes: 19
@@ -17,9 +17,9 @@ TRAIN:
   zoom_factor: 8  # zoom factor for final prediction during training, be in [1, 2, 4, 8]
   ignore_label: 255
   aux_weight: 0.4
-  train_gpu: [0, 1, 2, 3, 4, 5, 6, 7]
+  train_gpu: [0, 1, 2, 3]
   workers: 16  # data loader workers
-  batch_size: 16  # batch size for training
+  batch_size: 12  # batch size for training
   batch_size_val: 8  # batch size for validation during training, memory and speed tradeoff
   base_lr: 0.01
   epochs: 200

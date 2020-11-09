@@ -82,14 +82,21 @@ class PSPNet(nn.Module):
         assert (x_size[2]-1) % 8 == 0 and (x_size[3]-1) % 8 == 0
         h = int((x_size[2] - 1) / 8 * self.zoom_factor + 1)
         w = int((x_size[3] - 1) / 8 * self.zoom_factor + 1)
-
+        
+        # print('Input: ', h, w, x.shape) # Input:  473 473 torch.Size([2, 3, 473, 473])
         x = self.layer0(x)
+        # print(x.shape) # torch.Size([2, 128, 119, 119])
         x = self.layer1(x)
+        # print(x.shape) # torch.Size([2, 256, 119, 119])
         x = self.layer2(x)
+        # print(x.shape) # torch.Size([2, 512, 60, 60])
         x_tmp = self.layer3(x)
+        # print(x_tmp.shape) # torch.Size([2, 1024, 60, 60])
         x = self.layer4(x_tmp)
+        # print(x.shape) # torch.Size([2, 2048, 60, 60])
         if self.use_ppm:
             x = self.ppm(x)
+            # print(x.shape, 'ppm') # torch.Size([2, 4096, 60, 60]) ppm
         x = self.cls(x)
         if self.zoom_factor != 1:
             x = F.interpolate(x, size=(h, w), mode='bilinear', align_corners=True)

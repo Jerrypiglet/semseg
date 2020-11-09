@@ -64,6 +64,7 @@ def load_cfg_from_cfg_file(file):
 
     with open(file, 'r') as f:
         cfg_from_file = yaml.safe_load(f)
+        print(cfg_from_file)
 
     for key in cfg_from_file:
         for k, v in cfg_from_file[key].items():

@@ -24,6 +24,7 @@ def get_parser():
     args = parser.parse_args()
     assert args.config is not None
     cfg = config.load_cfg_from_cfg_file(args.config)
+    print('>>>>>', args.config, cfg)
     cfg.image = args.image
     if args.opts is not None:
         cfg = config.merge_cfg_from_list(cfg, args.opts)
@@ -105,6 +106,10 @@ def main():
 
 def net_process(model, image, mean, std=None, flip=True):
     input = torch.from_numpy(image.transpose((2, 0, 1))).float()
+    print(input.shape, '====')
+    print(mean, std, '====')
+    print('--0', torch.max(input), torch.min(input), torch.median(input), input.shape)
+
     if std is None:
         for t, m in zip(input, mean):
             t.sub_(m)
@@ -112,6 +117,8 @@ def net_process(model, image, mean, std=None, flip=True):
         for t, m, s in zip(input, mean, std):
             t.sub_(m).div_(s)
     input = input.unsqueeze(0).cuda()
+    print('--1', torch.max(input), torch.min(input), torch.median(input), input.shape)
+
     if flip:
         input = torch.cat([input, input.flip(3)], 0)
     with torch.no_grad():
@@ -138,6 +145,7 @@ def scale_process(model, image, classes, crop_h, crop_w, h, w, mean, std=None, s
     pad_w_half = int(pad_w / 2)
     if pad_h > 0 or pad_w > 0:
         image = cv2.copyMakeBorder(image, pad_h_half, pad_h - pad_h_half, pad_w_half, pad_w - pad_w_half, cv2.BORDER_CONSTANT, value=mean)
+        print('>>>>image', image.shape)
     new_h, new_w, _ = image.shape
     stride_h = int(np.ceil(crop_h*stride_rate))
     stride_w = int(np.ceil(crop_w*stride_rate))
@@ -176,6 +184,7 @@ def test(model, image_path, classes, mean, std, base_size, crop_h, crop_w, scale
         else:
             new_h = round(long_size/float(w)*h)
         image_scale = cv2.resize(image, (new_w, new_h), interpolation=cv2.INTER_LINEAR)
+        print('++++++++++', w, h, scale, new_w, new_h)
         prediction += scale_process(model, image_scale, classes, crop_h, crop_w, h, w, mean, std)
     prediction = scale_process(model, image_scale, classes, crop_h, crop_w, h, w, mean, std)
     prediction = np.argmax(prediction, axis=2)

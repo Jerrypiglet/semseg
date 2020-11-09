@@ -24,6 +24,8 @@ cv2.ocl.setUseOpenCL(False)
 cv2.setNumThreads(0)
 
 
+
+
 def get_parser():
     parser = argparse.ArgumentParser(description='PyTorch Semantic Segmentation')
     parser.add_argument('--config', type=str, default='config/ade20k/ade20k_pspnet50.yaml', help='config file')
@@ -220,24 +222,29 @@ def main_worker(gpu, ngpus_per_node, argss):
     for epoch in range(args.start_epoch, args.epochs):
         epoch_log = epoch + 1
 
-        logger.info('Validating.....222')
         if args.evaluate:
-            logger.info(('Validating.....')
-            loss_val, mIoU_val, mAcc_val, allAcc_val, return_dict = validate(val_loader, model, criterion)
+            # logger.info('Validating.....')
+            loss_val, mIoU_val, mAcc_val, allAcc_val, return_dict = validate(val_loader, model, criterion, args)
             if main_process():
-                writer.add_scalar('loss_val', loss_val, epoch_log)
-                writer.add_scalar('mIoU_val', mIoU_val, epoch_log)
-                writer.add_scalar('mAcc_val', mAcc_val, epoch_log)
-                writer.add_scalar('allAcc_val', allAcc_val, epoch_log)
+                writer.add_scalar('VAL/loss_val', loss_val, epoch_log)
+                writer.add_scalar('VAL/mIoU_val', mIoU_val, epoch_log)
+                writer.add_scalar('VAL/mAcc_val', mAcc_val, epoch_log)
+                writer.add_scalar('VAL/allAcc_val', allAcc_val, epoch_log)
+
+                for sample_idx in range(len(return_dict['image_name_list'])):
+                    writer.add_text('VAL-image_name/%d'%sample_idx, return_dict['image_name_list'][sample_idx], epoch)
+                    writer.add_image('VAL-image/%d'%sample_idx, return_dict['im_list'][sample_idx], epoch, dataformats='HWC')
+                    writer.add_image('VAL-color_label/%d'%sample_idx, return_dict['color_GT_list'][sample_idx], epoch, dataformats='HWC')
+                    writer.add_image('VAL-color_pred/%d'%sample_idx, return_dict['color_pred_list'][sample_idx], epoch, dataformats='HWC')
 
         if args.distributed:
             train_sampler.set_epoch(epoch)
         loss_train, mIoU_train, mAcc_train, allAcc_train = train(train_loader, model, optimizer, epoch)
         if main_process():
-            writer.add_scalar('loss_train', loss_train, epoch_log)
-            writer.add_scalar('mIoU_train', mIoU_train, epoch_log)
-            writer.add_scalar('mAcc_train', mAcc_train, epoch_log)
-            writer.add_scalar('allAcc_train', allAcc_train, epoch_log)
+            writer.add_scalar('TRAIN/loss_train', loss_train, epoch_log)
+            writer.add_scalar('TRAIN/mIoU_train', mIoU_train, epoch_log)
+            writer.add_scalar('TRAIN/mAcc_train', mAcc_train, epoch_log)
+            writer.add_scalar('TRAIN/allAcc_train', allAcc_train, epoch_log)
 
         if (epoch_log % args.save_freq == 0) and main_process():
             filename = args.save_path + '/train_epoch_' + str(epoch_log) + '.pth'
@@ -261,7 +268,7 @@ def train(train_loader, model, optimizer, epoch):
     model.train()
     end = time.time()
     max_iter = args.epochs * len(train_loader)
-    for i, (input, target) in enumerate(train_loader):
+    for i, (input, target, _) in enumerate(train_loader):
         data_time.update(time.time() - end)
         if args.zoom_factor != 8:
             h = int((target.size()[1] - 1) / 8 * args.zoom_factor + 1)
@@ -329,10 +336,10 @@ def train(train_loader, model, optimizer, epoch):
                                                           loss_meter=loss_meter,
                                                           accuracy=accuracy))
         if main_process():
-            writer.add_scalar('loss_train_batch', main_loss_meter.val, current_iter)
-            writer.add_scalar('mIoU_train_batch', np.mean(intersection / (union + 1e-10)), current_iter)
-            writer.add_scalar('mAcc_train_batch', np.mean(intersection / (target + 1e-10)), current_iter)
-            writer.add_scalar('allAcc_train_batch', accuracy, current_iter)
+            writer.add_scalar('TRAIN/loss_train_batch', main_loss_meter.val, current_iter)
+            writer.add_scalar('TRAIN/mIoU_train_batch', np.mean(intersection / (union + 1e-10)), current_iter)
+            writer.add_scalar('TRAIN/mAcc_train_batch', np.mean(intersection / (target + 1e-10)), current_iter)
+            writer.add_scalar('TRAIN/allAcc_train_batch', accuracy, current_iter)
 
     iou_class = intersection_meter.sum / (union_meter.sum + 1e-10)
     accuracy_class = intersection_meter.sum / (target_meter.sum + 1e-10)
@@ -344,7 +351,7 @@ def train(train_loader, model, optimizer, epoch):
     return main_loss_meter.avg, mIoU, mAcc, allAcc
 
 
-def validate(val_loader, model, criterion):
+def validate(val_loader, model, criterion, args):
     if main_process():
         logger.info('>>>>>>>>>>>>>>>> Start Evaluation >>>>>>>>>>>>>>>>')
     batch_time = AverageMeter()
@@ -354,10 +361,19 @@ def validate(val_loader, model, criterion):
     union_meter = AverageMeter()
     target_meter = AverageMeter()
 
+    colors = np.loadtxt(args.colors_path).astype('uint8')
+
     model.eval()
     end = time.time()
     return_dict = {}
-    for i, (input, target) in enumerate(val_loader):
+    color_GT_list = []
+    color_pred_list = []
+    im_list = []
+    image_name_list =[]
+    summary_idx = 0
+    for i, (input, target, image_paths) in enumerate(val_loader):
+        # if i > 20:
+        #     break
         data_time.update(time.time() - end)
         input = input.cuda(non_blocking=True)
         target = target.cuda(non_blocking=True)
@@ -366,23 +382,28 @@ def validate(val_loader, model, criterion):
             output = F.interpolate(output, size=target.size()[1:], mode='bilinear', align_corners=True)
         loss = criterion(output, target)
 
-        print(output.shape, target.shape)
-        if i == 0:
-            color_GT_list = []
-            color_pred_list = []
+        # print(output.shape, target.shape) # torch.Size([8, 21, 241, 321]) torch.Size([8, 241, 321])
+        if summary_idx <= 12:
+            prediction = torch.argmax(output, 1).cpu().numpy()
+            label = target.cpu().numpy()
             for sample_idx in range(output.shape[0]):
-                gray = np.uint8(prediction.cpu().numpy())
-                color = colorize(gray, colors)
-                image_path, _ = data_list[i]
-                image_name = image_path.split('/')[-1].split('.')[0]
-                gray_path = os.path.join(gray_folder, image_name + '.png')
-                color_path = os.path.join(color_folder, image_name + '.png')
-                cv2.imwrite(gray_path, gray)
-                color.save(color_path)
-            return_dict.update({'color_GT_list': color_GT_list, 'color_pred_list': color_pred_list})
-
-
-
+                gray_GT = np.uint8(label[sample_idx])
+                color_GT = np.array(colorize(gray_GT, colors).convert('RGB'))
+                gray_pred = np.uint8(prediction[sample_idx])
+                color_pred = np.array(colorize(gray_pred, colors).convert('RGB'))
+                image_path = image_paths[sample_idx]
+                # image_name = image_path.split('/')[-1].split('.')[0]
+                print(color_GT.shape, color_GT.dtype, color_pred.shape, color_pred.dtype, image_path)
+                # gray_path = os.path.join(gray_folder, image_name + '.png')
+                # color_path = os.path.join(color_folder, image_name + '.png')
+                # cv2.imwrite(gray_path, gray)
+                # color.save(color_path)
+                image_name_list.append(image_path)
+                im_list.append(cv2.imread(image_path))
+                color_GT_list.append(color_GT)
+                color_pred_list.append(color_pred)
+                summary_idx += 1
+            return_dict.update({'image_name_list': image_name_list, 'im_list': im_list, 'color_GT_list': color_GT_list, 'color_pred_list': color_pred_list})
 
         n = input.size(0)
         if args.multiprocessing_distributed:
