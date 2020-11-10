@@ -1,0 +1,1 @@
+rclone copy s3mm1:train /viscompfs/users/ruizhu/train-20201015-234233 && cd /viscompfs/users/ruizhu/train-20201015-234233 && /root/miniconda3/bin/python trainBRDF.py --cuda --ifCluster --dataRoot /siggraphasia20dataset/code/Routine/DatasetCreation/ --cascadeLevel 0 --experiment train_BRDF_matMap-20201015-234233 --deviceIds 0 1 --ifMatMapInput

@@ -1,0 +1,1 @@
+/root/miniconda3/bin/python train/trainBRDF.py --cuda --dataRoot /siggraphasia20dataset/code/Routine/DatasetCreation/ --cascadeLevel 0 --experiment train_BRDF-20201015-212427 --deviceIds 0 1

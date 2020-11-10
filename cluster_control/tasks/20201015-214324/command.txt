@@ -1,0 +1,1 @@
+rclone copy s3mm1:train /viscompfs/users/ruizhu/train && cd /viscompfs/users/ruizhu/train
