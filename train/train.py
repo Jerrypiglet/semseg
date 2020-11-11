@@ -285,26 +285,28 @@ def train(train_loader, model, optimizer, epoch, epoch_log, val_loader, criterio
     max_iter = args.epochs * len(train_loader)
     for i, (input, target, _) in enumerate(train_loader):
 
-        if args.evaluate and args.val_every_iter != -1 and i % args.val_every_iter == 0:
+        current_iter = epoch * len(train_loader) + i + 1
+
+        if args.evaluate and args.val_every_iter != -1 and current_iter % args.val_every_iter == 0:
             # logger.info('Validating.....')
             loss_val, mIoU_val, mAcc_val, allAcc_val, return_dict = validate(val_loader, model, criterion, args)
             if main_process():
-                writer.add_scalar('VAL/loss_val', loss_val, i)
-                writer.add_scalar('VAL/mIoU_val', mIoU_val, i)
-                writer.add_scalar('VAL/mAcc_val', mAcc_val, i)
-                writer.add_scalar('VAL/allAcc_val', allAcc_val, i)
+                writer.add_scalar('VAL/loss_val', loss_val, current_iter)
+                writer.add_scalar('VAL/mIoU_val', mIoU_val, current_iter)
+                writer.add_scalar('VAL/mAcc_val', mAcc_val, current_iter)
+                writer.add_scalar('VAL/allAcc_val', allAcc_val, current_iter)
 
                 for sample_idx in range(len(return_dict['image_name_list'])):
-                    writer.add_text('VAL-image_name/%d'%sample_idx, return_dict['image_name_list'][sample_idx], i)
-                    writer.add_image('VAL-image/%d'%sample_idx, return_dict['im_list'][sample_idx], i, dataformats='HWC')
-                    writer.add_image('VAL-color_label/%d'%sample_idx, return_dict['color_GT_list'][sample_idx], i, dataformats='HWC')
-                    writer.add_image('VAL-color_pred/%d'%sample_idx, return_dict['color_pred_list'][sample_idx], i, dataformats='HWC')
+                    writer.add_text('VAL-image_name/%d'%sample_idx, return_dict['image_name_list'][sample_idx], current_iter)
+                    writer.add_image('VAL-image/%d'%sample_idx, return_dict['im_list'][sample_idx], current_iter, dataformats='HWC')
+                    writer.add_image('VAL-color_label/%d'%sample_idx, return_dict['color_GT_list'][sample_idx], current_iter, dataformats='HWC')
+                    writer.add_image('VAL-color_pred/%d'%sample_idx, return_dict['color_pred_list'][sample_idx], current_iter, dataformats='HWC')
 
             model.train()
             end = time.time()
 
         # if (epoch_log % args.save_freq == 0) and main_process():
-        if args.save_every_iter != -1 and i % args.save_every_iter == 0  and main_process():
+        if args.save_every_iter != -1 and current_iter % args.save_every_iter == 0  and main_process():
             model.eval()
             filename = args.save_path + '/train_epoch_' + str(epoch_log) + '_tid_' + str(i) + '.pth'
             logger.info('Saving checkpoint to: ' + filename)
@@ -354,7 +356,6 @@ def train(train_loader, model, optimizer, epoch, epoch_log, val_loader, criterio
         batch_time.update(time.time() - end)
         end = time.time()
 
-        current_iter = epoch * len(train_loader) + i + 1
         current_lr = poly_learning_rate(args.base_lr, current_iter, max_iter, power=args.power)
         for index in range(0, args.index_split):
             optimizer.param_groups[index]['lr'] = current_lr
