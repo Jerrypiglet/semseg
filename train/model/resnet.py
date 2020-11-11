@@ -197,10 +197,12 @@ def resnet50(pretrained=False, args=None, **kwargs):
     model = ResNet(Bottleneck, [3, 4, 6, 3], **kwargs)
     if pretrained:
         # model.load_state_dict(model_zoo.load_url(model_urls['resnet50']))
+        model_path = './initmodel/resnet50_v2.pth'
         if args.if_cluster:
-            model_path = path.join(args.initmodel_path, 'resnet50_v2.pth')
-        else:
-            model_path = './initmodel/resnet50_v2.pth'
+            model_path = path.join(args.project_path, model_path)
+        # if 'initmodel_path' in args:
+        #     model_path = path.join(args.initmodel_path, 'resnet50_v2.pth')
+        # else:
         model.load_state_dict(torch.load(model_path), strict=False)
     return model
 
@@ -214,7 +216,13 @@ def resnet101(pretrained=False, args=None, **kwargs):
     model = ResNet(Bottleneck, [3, 4, 23, 3], **kwargs)
     if pretrained:
         # model.load_state_dict(model_zoo.load_url(model_urls['resnet101']))
-        model_path = './initmodel/resnet101_v2.pth'
+        # if args.if_cluster:
+        model_path = path.join(args.initmodel_path, 'resnet101_v2.pth')
+        if args.if_cluster:
+            model_path = path.join(args.project_path, model_path)
+        # if 'initmodel_path' in args:
+        # else:
+        #     model_path = './initmodel/resnet101_v2.pth'
         model.load_state_dict(torch.load(model_path), strict=False)
     return model
 

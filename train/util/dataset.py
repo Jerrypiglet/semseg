@@ -102,6 +102,8 @@ class SemData(Dataset):
             im_hdr, scale = self.scaleHdr(im_hdr, seg)
             im_not_hdr = np.clip(im_hdr**(1.0/2.2), 0., 1.)
             image = (255. * im_not_hdr).transpose(1, 2, 0).astype(np.uint8)
+        elif 'interiornet' in self.dataset_name.lower():
+            image = np.array(Image.open(image_path).convert('RGB'))
         else:
             image = cv2.imread(image_path, cv2.IMREAD_COLOR)  # BGR 3 channel ndarray wiht shape H * W * 3
             # print(image)

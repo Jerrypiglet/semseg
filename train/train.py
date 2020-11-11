@@ -83,6 +83,17 @@ def check(args):
 
 def main():
     args = get_parser()
+    if args.if_cluster:
+        args.data_root = args.data_root_cluster
+        args.project_path = args.project_path_cluster
+        args.data_config_path = 'data'
+    for key in ['train_list', 'val_list', 'colors_path', 'names_path']:
+        args[key] = os.path.join(args.data_config_path, args[key])
+    for key in ['save_path', 'model_path', 'save_folder']:
+        args[key] = os.path.join(args.project_path, args[key])
+    for key in ['save_path', 'model_path', 'save_folder']:
+        args[key] = args[key] % args.exp_name
+
     check(args)
     os.environ["CUDA_VISIBLE_DEVICES"] = ','.join(str(x) for x in args.train_gpu)
     if args.manual_seed is not None:
@@ -308,7 +319,7 @@ def train(train_loader, model, optimizer, epoch, epoch_log, val_loader, criterio
         # if (epoch_log % args.save_freq == 0) and main_process():
         if args.save_every_iter != -1 and current_iter % args.save_every_iter == 0  and main_process():
             model.eval()
-            filename = args.save_path + '/train_epoch_' + str(epoch_log) + '_tid_' + str(i) + '.pth'
+            filename = args.save_path + '/train_epoch_' + str(epoch_log) + '_tid_' + str(current_iter) + '.pth'
             logger.info('Saving checkpoint to: ' + filename)
             torch.save({'epoch': epoch_log, 'state_dict': model.state_dict(), 'optimizer': optimizer.state_dict()}, filename)
             # if epoch_log / args.save_freq > 2:

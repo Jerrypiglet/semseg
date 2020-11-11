@@ -1,8 +1,9 @@
 DATA:
   data_root: dataset/InteriorNet
   dataset_name: 'InteriorNet'
-  train_list: train/data/InteriorNet/list/train.txt
-  val_list: train/data/InteriorNet/list/val.txt
+  data_config_path: train/data
+  train_list: InteriorNet/list/train.txt
+  val_list: InteriorNet/list/val.txt
   classes: 41
 
 TRAIN:
@@ -24,8 +25,8 @@ TRAIN:
   # train_gpu: [0, 1, 2, 3]
   train_gpu: [0,1,2,3]
   workers: 16  # data loader workers
-  batch_size: 24  # batch size for training
-  batch_size_val: 24  # batch size for validation during training, memory and speed tradeoff
+  batch_size: 32  # batch size for training
+  batch_size_val: 32  # batch size for validation during training, memory and speed tradeoff
   base_lr: 0.01
   epochs: 200
   start_epoch: 0
@@ -40,6 +41,9 @@ TRAIN:
   resume:  # path to latest checkpoint (default: none)
   evaluate: True  # evaluate on validation set, extra gpu memory needed and small batch_size_val is recommend
   if_cluster: False
+  val_every_iter: 1000
+  save_every_iter: 1000
+
 
 Distributed:
   dist_url: tcp://127.0.0.1:6789
@@ -61,5 +65,5 @@ TEST:
   test_gpu: [0]
   model_path: exp/InteriorNet/pspnet50/model/train_epoch_200.pth  # evaluation model path
   save_folder: exp/InteriorNet/pspnet50/result/epoch_200/val/ss  # results save folder
-  colors_path: train/data/InteriorNet/InteriorNet_colors_nyu40.txt  # path of dataset colors
-  names_path: train/data/InteriorNet/InteriorNet_names_nyu40.txt  # path of dataset category names
+  colors_path: InteriorNet/InteriorNet_colors_nyu40.txt  # path of dataset colors
+  names_path: InteriorNet/InteriorNet_names_nyu40.txt  # path of dataset category names
