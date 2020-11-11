@@ -205,7 +205,7 @@ def resnet50(pretrained=False, args=None, **kwargs):
     return model
 
 
-def resnet101(pretrained=False, **kwargs):
+def resnet101(pretrained=False, args=None, **kwargs):
     """Constructs a ResNet-101 model.
 
     Args:

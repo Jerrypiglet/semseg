@@ -73,6 +73,6 @@ dataset/
 *.ninja_deps
 *.ninja_log
 *.ninja
-*.yaml
+# *.yaml
 slurm*
 initmodel

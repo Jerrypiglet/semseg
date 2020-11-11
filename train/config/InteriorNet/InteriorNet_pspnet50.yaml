@@ -1,8 +1,8 @@
 DATA:
   data_root: dataset/InteriorNet
   dataset_name: 'InteriorNet'
-  train_list: data/InteriorNet/list/train.txt
-  val_list: data/InteriorNet/list/val.txt
+  train_list: train/data/InteriorNet/list/train.txt
+  val_list: train/data/InteriorNet/list/val.txt
   classes: 41
 
 TRAIN:
@@ -39,6 +39,8 @@ TRAIN:
   weight:  # path to initial weight (default: none)
   resume:  # path to latest checkpoint (default: none)
   evaluate: True  # evaluate on validation set, extra gpu memory needed and small batch_size_val is recommend
+  if_cluster: False
+
 Distributed:
   dist_url: tcp://127.0.0.1:6789
   dist_backend: 'nccl'
@@ -59,5 +61,5 @@ TEST:
   test_gpu: [0]
   model_path: exp/InteriorNet/pspnet50/model/train_epoch_200.pth  # evaluation model path
   save_folder: exp/InteriorNet/pspnet50/result/epoch_200/val/ss  # results save folder
-  colors_path: data/InteriorNet/InteriorNet_colors_nyu40.txt  # path of dataset colors
-  names_path: data/InteriorNet/InteriorNet_names_nyu40.txt  # path of dataset category names
+  colors_path: train/data/InteriorNet/InteriorNet_colors_nyu40.txt  # path of dataset colors
+  names_path: train/data/InteriorNet/InteriorNet_names_nyu40.txt  # path of dataset category names

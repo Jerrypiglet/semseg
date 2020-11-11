@@ -285,7 +285,7 @@ def train(train_loader, model, optimizer, epoch, epoch_log, val_loader, criterio
     max_iter = args.epochs * len(train_loader)
     for i, (input, target, _) in enumerate(train_loader):
 
-        current_iter = epoch * len(train_loader) + i + 1
+        current_iter = epoch * len(train_loader) + i
 
         if args.evaluate and args.val_every_iter != -1 and current_iter % args.val_every_iter == 0:
             # logger.info('Validating.....')

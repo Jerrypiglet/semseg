@@ -1,0 +1,77 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  labels:
+    user: rui
+  name: z-torch-job-gpu20201110-120326
+spec:
+  backoffLimit: 2
+  template:
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: nautilus.io/group
+                operator: In
+                values:
+                - haosu
+              - key: gpu-type
+                operator: In
+                values:
+                - 1080Ti
+                - 2080Ti
+      containers:
+      - args:
+        - which python && . /root/miniconda3/etc/profile.d/conda.sh && cd /viscompfs/users/ruizhu/semanticInverse
+          && conda activate /viscompfs/users/ruizhu/envs/semanticInverse && which
+          python && rclone copy s3mm1:train_semseg /viscompfs/users/ruizhu/semseg/train-20201110-120326
+          && cd /viscompfs/users/ruizhu/semseg/train-20201110-120326 && /viscompfs/users/ruizhu/envs/semanticInverse/bin/python
+          train.py --config config/openrooms/openrooms_pspnet50_cluster.yaml
+        command:
+        - sh
+        - -c
+        image: localhost:30081/jerrypiglet/deeplearningconda38s3
+        imagePullPolicy: IfNotPresent
+        name: gpu-container-rui1
+        resources:
+          limits:
+            cpu: '10'
+            memory: 50Gi
+            nvidia.com/gpu: 4
+          requests:
+            cpu: '5'
+            memory: 10Gi
+            nvidia.com/gpu: 4
+        volumeMounts:
+        - mountPath: /dev/shm
+          name: dshm
+        - mountPath: /viscompfs
+          name: viscompfs
+        - mountPath: /siggraphasia20dataset
+          name: siggraphasia20dataset
+        - mountPath: /ruidata
+          name: ruidata
+      restartPolicy: Never
+      volumes:
+      - emptyDir:
+          medium: Memory
+        name: dshm
+      - flexVolume:
+          driver: ceph.rook.io/rook
+          fsType: ceph
+          options:
+            clusterNamespace: rook
+            fsName: nautilusfs
+            mountSecret: ceph-fs-secret
+            mountUser: viscompfs
+            path: /viscompfs
+        name: viscompfs
+      - name: siggraphasia20dataset
+        persistentVolumeClaim:
+          claimName: siggraphasia20dataset
+      - name: ruidata
+        persistentVolumeClaim:
+          claimName: ruidata
+  ttlSecondsAfterFinished: 86400

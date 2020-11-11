@@ -1,0 +1,5 @@
+opencv-python==3.4.11.45
+imageio
+torch==1.7.0
+tensorboardX
+pyyaml

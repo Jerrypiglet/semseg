@@ -95,7 +95,7 @@ class SemData(Dataset):
 
     def read_image(self, image_path):
         # if self.is_master:
-        #     self.logger.info('======'+image_path)
+        # print('======'+image_path)
         if 'openrooms' in self.dataset_name.lower():
             im_hdr = self.loadHdr(image_path)
             seg = np.ones((1, im_hdr.shape[1], im_hdr.shape[2]))
@@ -104,6 +104,7 @@ class SemData(Dataset):
             image = (255. * im_not_hdr).transpose(1, 2, 0).astype(np.uint8)
         else:
             image = cv2.imread(image_path, cv2.IMREAD_COLOR)  # BGR 3 channel ndarray wiht shape H * W * 3
+            # print(image)
             image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)  # convert cv2 read image from BGR order to RGB order
             image = np.float32(image)
         return image
