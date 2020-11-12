@@ -4,12 +4,16 @@ import random
 
 # dataset_path = 'dataset/InteriorNet_mini'
 dataset_path = 'dataset/InteriorNet'
-list_path = 'data/InteriorNet'
+list_path = 'train/data/InteriorNet'
 
 scene_names = [PurePath(x).relative_to(dataset_path) for x in Path(dataset_path).iterdir()]
 scene_names = [x for x in scene_names if ('.zip' not in str(x) and 'list' not in str(x))]
 scene_num = len(scene_names)
 print('Found %d names'%scene_num, scene_names[:5])
+
+subsample_ratio = 0.25
+subsample_ratio_name_dict = {'0.25': '100k', '0.125': '50k', '0.083': '30k', '0.025': '10k'}
+assert str(subsample_ratio) in list(subsample_ratio_name_dict.keys())
 
 for split in ['train', 'val']:
     frame_paths_all_dict = {'cam0/data': [], 'label0/data': []}
@@ -48,8 +52,24 @@ for split in ['train', 'val']:
 
     print(frame_paths_all_dict['cam0/data'][:5], frame_paths_all_dict['label0/data'][:5])
 
-    output_txt_file = Path(list_path) / Path('list') / Path('%s.txt'%split)
-    with open(str(output_txt_file), 'w') as text_file:
-        for path_cam0, path_label in zip(frame_paths_all_dict['cam0/data'], frame_paths_all_dict['label0/data']):
-            text_file.write('%s %s\n'%(path_cam0, path_label))
+    for subsample_ratio in ['1'] + list(subsample_ratio_name_dict.keys()):
+        subsample_ratio_float = float(subsample_ratio)
+        if subsample_ratio_float != 1.:
+            index_list = range(len(frame_paths_all_dict['cam0/data']))
+            sample_num = int(len(index_list) * subsample_ratio_float)
+            print(sample_num, len(index_list), subsample_ratio_float)
+            index_list_sample = random.sample(index_list, sample_num)
+            im_list = [frame_paths_all_dict['cam0/data'][i] for i in index_list_sample]
+            label_list = [frame_paths_all_dict['label0/data'][i] for i in index_list_sample]
+        else:
+            im_list = frame_paths_all_dict['cam0/data']
+            label_list = frame_paths_all_dict['label0/data']
+
+        output_txt_file = Path(list_path) / Path('list') / Path('%s.txt'%split)
+        if subsample_ratio_float != 1.:
+            output_txt_file = str(output_txt_file).replace('.txt', '_%s.txt'%(subsample_ratio_name_dict[subsample_ratio]))
+
+        with open(str(output_txt_file), 'w') as text_file:
+            for path_cam0, path_label in zip(im_list, label_list):
+                text_file.write('%s %s\n'%(path_cam0, path_label))
     

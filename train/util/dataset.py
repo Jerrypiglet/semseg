@@ -63,7 +63,9 @@ class SemData(Dataset):
         self.logger = logger
         self.is_master = is_master
         self.args = args
+        assert self.args is not None
         self.dataset_name = args.dataset_name
+        self.target_hw = (args.train_h, args.train_w) if split in ['train', 'val'] else (args.test_h, args.test_w)
 
     def __len__(self):
         return len(self.data_list)
@@ -93,7 +95,7 @@ class SemData(Dataset):
                 label[label > 20] = 0
         return image, label, image_path
 
-    def read_image(self, image_path):
+    def read_image(self, image_path, resize_to_target_size=False):
         # if self.is_master:
         # print('======'+image_path)
         if 'openrooms' in self.dataset_name.lower():
@@ -102,13 +104,17 @@ class SemData(Dataset):
             im_hdr, scale = self.scaleHdr(im_hdr, seg)
             im_not_hdr = np.clip(im_hdr**(1.0/2.2), 0., 1.)
             image = (255. * im_not_hdr).transpose(1, 2, 0).astype(np.uint8)
-        elif 'interiornet' in self.dataset_name.lower():
-            image = np.array(Image.open(image_path).convert('RGB'))
+        # elif 'interiornet' in self.dataset_name.lower():
         else:
-            image = cv2.imread(image_path, cv2.IMREAD_COLOR)  # BGR 3 channel ndarray wiht shape H * W * 3
-            # print(image)
-            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)  # convert cv2 read image from BGR order to RGB order
-            image = np.float32(image)
+            image = np.array(Image.open(image_path).convert('RGB'))
+        # else:
+        #     image = cv2.imread(image_path, cv2.IMREAD_COLOR)  # BGR 3 channel ndarray wiht shape H * W * 3
+        #     # print(image)
+        #     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)  # convert cv2 read image from BGR order to RGB order
+        #     image = np.float32(image)
+        if resize_to_target_size:
+            image = cv2.resize(image, dsize=(self.target_hw[1], self.target_hw[0]), interpolation=cv2.INTER_AREA)
+
         return image
 
     def read_label(self, label_path):

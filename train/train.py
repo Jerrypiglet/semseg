@@ -87,11 +87,11 @@ def main():
         args.data_root = args.data_root_cluster
         args.project_path = args.project_path_cluster
         args.data_config_path = 'data'
-    for key in ['train_list', 'val_list', 'colors_path', 'names_path']:
+    for key in ['train_list', 'val_list', 'test_list', 'colors_path', 'names_path']:
         args[key] = os.path.join(args.data_config_path, args[key])
     for key in ['save_path', 'model_path', 'save_folder']:
         args[key] = os.path.join(args.project_path, args[key])
-    for key in ['save_path', 'model_path', 'save_folder']:
+    for key in ['save_path']:
         args[key] = args[key] % args.exp_name
 
     check(args)
@@ -185,7 +185,7 @@ def main_worker(gpu, ngpus_per_node, argss):
             if main_process():
                 logger.info("=> no weight found at '{}'".format(args.weight))
 
-    if args.resume:
+    if args.resume != 'none':
         if os.path.isfile(args.resume):
             if main_process():
                 logger.info("=> loading checkpoint '{}'".format(args.resume))
@@ -298,7 +298,8 @@ def train(train_loader, model, optimizer, epoch, epoch_log, val_loader, criterio
 
         current_iter = epoch * len(train_loader) + i
 
-        if args.evaluate and args.val_every_iter != -1 and current_iter % args.val_every_iter == 0:
+        if args.just_vis or (args.evaluate and args.val_every_iter != -1 and current_iter % args.val_every_iter == 0):
+        # if True:
             # logger.info('Validating.....')
             loss_val, mIoU_val, mAcc_val, allAcc_val, return_dict = validate(val_loader, model, criterion, args)
             if main_process():
@@ -442,6 +443,9 @@ def validate(val_loader, model, criterion, args):
         loss = criterion(output, target)
 
         # print(output.shape, target.shape) # torch.Size([8, 21, 241, 321]) torch.Size([8, 241, 321])
+        if summary_idx > 12 and args.just_vis:
+            break
+
         if summary_idx <= 12:
             prediction = torch.argmax(output, 1).cpu().numpy()
             label = target.cpu().numpy()
@@ -475,6 +479,7 @@ def validate(val_loader, model, criterion, args):
             loss = torch.mean(loss)
 
         output = output.max(1)[1]
+        print(output.shape, target.shape)
         intersection, union, target = intersectionAndUnionGPU(output, target, args.classes, args.ignore_label)
         if args.multiprocessing_distributed:
             dist.all_reduce(intersection), dist.all_reduce(union), dist.all_reduce(target)

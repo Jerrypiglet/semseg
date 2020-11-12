@@ -80,7 +80,7 @@ class PSPNet(nn.Module):
 
     def forward(self, x, y=None):
         x_size = x.size()
-        assert (x_size[2]-1) % 8 == 0 and (x_size[3]-1) % 8 == 0
+        assert (x_size[2]-1) % 8 == 0 and (x_size[3]-1) % 8 == 0, 'x_size[2] %d, x_size[3] %d'%(x_size[2], x_size[3])
         h = int((x_size[2] - 1) / 8 * self.zoom_factor + 1)
         w = int((x_size[3] - 1) / 8 * self.zoom_factor + 1)
         

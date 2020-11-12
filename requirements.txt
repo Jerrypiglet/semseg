@@ -3,3 +3,5 @@ imageio
 torch==1.7.0
 tensorboardX
 pyyaml
+matplotlib
+tqdm

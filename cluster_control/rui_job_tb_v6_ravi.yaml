@@ -33,7 +33,7 @@ spec:
         resources:
           requests:
             cpu: "0.05"
-            memory: "0.2Gi"
+            memory: "0.5Gi"
             nvidia.com/gpu: 0
           limits:
             cpu: "8"
@@ -44,8 +44,8 @@ spec:
             mountPath: /dev/shm 
           - name: viscompfs
             mountPath: /viscompfs
-          # - name: eccv20dataset
-          #   mountPath: /eccv20dataset
+          - name: eccv20dataset
+            mountPath: /eccv20dataset
           - name: siggraphasia20dataset
             mountPath: /siggraphasia20dataset
           - name: ruidata
@@ -64,9 +64,9 @@ spec:
             path: /viscompfs
             mountUser: viscompfs
             mountSecret: ceph-fs-secret
-      # - name: eccv20dataset
-      #   persistentVolumeClaim:
-      #       claimName: eccv20dataset 
+      - name: eccv20dataset
+        persistentVolumeClaim:
+            claimName: eccv20dataset 
       - name: siggraphasia20dataset
         persistentVolumeClaim:
             claimName: siggraphasia20dataset

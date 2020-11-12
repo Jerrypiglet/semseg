@@ -3,27 +3,39 @@ from tqdm import tqdm
 import random
 import os
 
-dataset_path = 'dataset/openrooms'
 list_path = 'train/data/openrooms'
 
 dirs = ['main_xml', 'main_xml1',
         'mainDiffLight_xml', 'mainDiffLight_xml1', 
         'mainDiffMat_xml', 'mainDiffMat_xml1']
-scene_file = os.path.join(dataset_path, 'train.txt')
-with open(scene_file, 'r') as fIn:
-    scene_list = fIn.readlines() 
-scene_list = [x.strip() for x in scene_list]
 # print(scene_list)
 
 subset_to_prefix = {'im_RGB': 'im_', 'label_semseg': 'imsemLabel_'}
+subsample_ratio = 0.25
+subsample_ratio_name_dict = {'0.25': '100k', '0.125': '50k', '0.083': '30k', '0.025': '10k'}
+assert subsample_ratio in subsample_ratio_name_dict.keys()
 
-for split in ['train', 'val']:
+# for split in ['train', 'val', 'test']:
+for split in ['test']:
+    if split in ['train', 'val']:
+        dataset_path = 'dataset/openrooms'
+        scene_file = os.path.join(dataset_path, 'train.txt')
+    else:
+        dataset_path = 'dataset/openrooms_test'
+        scene_file = os.path.join(dataset_path, 'test.txt')
+    with open(scene_file, 'r') as fIn:
+        scene_list = fIn.readlines() 
+    scene_list = [x.strip() for x in scene_list]
+
+
     frame_paths_all_dict = {'im_RGB': [], 'label_semseg': []}
     scene_num = len(scene_list)
     if split == 'train':
         scene_list_split = scene_list[:int(scene_num*0.95)]
-    else:
+    elif split == 'val':
         scene_list_split = scene_list[-(scene_num - int(scene_num*0.95)):]
+    elif split == 'test':
+        scene_list_split = scene_list
     # print('%d scenes for split %s'%(len(scene_list_split ), split))
 
     scene_paths_split = []
@@ -70,12 +82,22 @@ for split in ['train', 'val']:
         random.shuffle(frame_paths_all_dict[subset])
 
     print(frame_paths_all_dict['im_RGB'][:5], frame_paths_all_dict['label_semseg'][:5])
+
+    if subsample_ratio != 1.:
+        index_list = range(len(frame_paths_all_dict['im_RGB']))
+        sample_num = int(len(index_list) * subsample_ratio)
+        index_list_sample = random.sample(index_list, sample_num)
+        frame_paths_all_dict['im_RGB'] = [frame_paths_all_dict['im_RGB'][i] for i in index_list_sample]
+        frame_paths_all_dict['label_semseg'] = [frame_paths_all_dict['label_semseg'][i] for i in index_list_sample]
     
     output_list_path = Path(list_path) / Path('list')
     output_list_path.mkdir(parents=True, exist_ok=True)
     output_txt_file = output_list_path / Path('%s.txt'%split)
+    if subsample_ratio != 1.:
+        output_txt_file = output_txt_file.replace('.txt', '_%s.txt'%subsample_rario_name_dict[subsample_ratio])
+
     with open(str(output_txt_file), 'w') as text_file:
         for path_cam0, path_label in zip(frame_paths_all_dict['im_RGB'], frame_paths_all_dict['label_semseg']):
             text_file.write('%s %s\n'%(path_cam0, path_label))
-            print('Wrote to %s'%output_txt_file)
+    print('Wrote to %s'%output_txt_file)
     

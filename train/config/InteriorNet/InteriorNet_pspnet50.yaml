@@ -20,7 +20,7 @@ TRAIN:
   rotate_min: -10  # minimum random rotate
   rotate_max: 10  # maximum random rotate
   zoom_factor: 8  # zoom factor for final prediction during training, be in [1, 2, 4, 8]
-  ignore_label: 255
+  ignore_label: 0
   aux_weight: 0.4
   # train_gpu: [0, 1, 2, 3]
   train_gpu: [0,1,2,3]
@@ -65,5 +65,5 @@ TEST:
   test_gpu: [0]
   model_path: exp/InteriorNet/pspnet50/model/train_epoch_200.pth  # evaluation model path
   save_folder: exp/InteriorNet/pspnet50/result/epoch_200/val/ss  # results save folder
-  colors_path: InteriorNet/InteriorNet_colors_nyu40.txt  # path of dataset colors
-  names_path: InteriorNet/InteriorNet_names_nyu40.txt  # path of dataset category names
+  colors_path: InteriorNet/InteriorNet_colors.txt  # path of dataset colors
+  names_path: InteriorNet/InteriorNet_names.txt  # path of dataset category names
