@@ -479,7 +479,6 @@ def validate(val_loader, model, criterion, args):
             loss = torch.mean(loss)
 
         output = output.max(1)[1]
-        print(output.shape, target.shape)
         intersection, union, target = intersectionAndUnionGPU(output, target, args.classes, args.ignore_label)
         if args.multiprocessing_distributed:
             dist.all_reduce(intersection), dist.all_reduce(union), dist.all_reduce(target)

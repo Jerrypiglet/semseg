@@ -118,15 +118,20 @@ class SemData(Dataset):
         return image
 
     def read_label(self, label_path):
-        if 'interiornet' in self.dataset_name.lower():
+        if self.dataset_name.lower() in ['interiornet', 'nyu']:
             label = np.array(Image.open(label_path).convert('L'))
+            if self.dataset_name.lower() in ['nyu']:
+                label[label!=255] = label[label!=255] + 1 # leave 0 for unlabelled
+                label[label==255] = 0
         elif 'openrooms' in self.dataset_name.lower():
             label = np.load(label_path)
             # if np.amax(label) > 42:
             #     print(np.amax(label), np.amin(label))
             label += 1 # to make 0 as unlabelled, 1 as environment
         else:
-            label = cv2.imread(label_path, cv2.IMREAD_GRAYSCALE)  # GRAY 1 channel ndarray with shape H * W
+            # label = cv2.imread(label_path, cv2.IMREAD_GRAYSCALE)  # GRAY 1 channel ndarray with shape H * W
+            raise (RuntimeError("label loader not supported for %s!"%self.dataset_name))
+
         return label
 
 
