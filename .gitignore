@@ -1,5 +1,6 @@
 ## General
 cluster_control/tasks/
+archive/
 
 # Compiled Object files
 *.slo

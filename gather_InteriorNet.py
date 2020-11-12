@@ -12,15 +12,21 @@ scene_num = len(scene_names)
 print('Found %d names'%scene_num, scene_names[:5])
 
 subsample_ratio = 0.25
-subsample_ratio_name_dict = {'0.25': '100k', '0.125': '50k', '0.083': '30k', '0.025': '10k'}
+subsample_ratio_name_dict = {'1': '400k', '0.25': '100k', '0.125': '50k', '0.083': '30k', '0.025': '10k'}
 assert str(subsample_ratio) in list(subsample_ratio_name_dict.keys())
 
-for split in ['train', 'val']:
+for split in ['train', 'val', 'test']:
     frame_paths_all_dict = {'cam0/data': [], 'label0/data': []}
+    train_val_split_at = int(scene_num * 0.93)
+    val_test_split_at = int(scene_num * 0.95)
     if split == 'train':
-        scene_names_split = scene_names[:int(scene_num*0.98)]
-    else:
-        scene_names_split = scene_names[-(scene_num - int(scene_num*0.98)):]
+        # scene_names_split = scene_names[:int(scene_num*0.98)]
+        scene_names_split = scene_names[:train_val_split_at]
+    elif split == 'val':
+        scene_names_split = scene_names[train_val_split_at:val_test_split_at]
+        # scene_names_split = scene_names[-(scene_num - int(scene_num*0.98)):]
+    elif split == 'test':
+        scene_names_split = scene_names[val_test_split_at:]
     print('%d names for split %s'%(len(scene_names_split ), split))
 
     for scene_name in tqdm(scene_names_split):
@@ -52,7 +58,7 @@ for split in ['train', 'val']:
 
     print(frame_paths_all_dict['cam0/data'][:5], frame_paths_all_dict['label0/data'][:5])
 
-    for subsample_ratio in ['1'] + list(subsample_ratio_name_dict.keys()):
+    for subsample_ratio in list(subsample_ratio_name_dict.keys()):
         subsample_ratio_float = float(subsample_ratio)
         if subsample_ratio_float != 1.:
             index_list = range(len(frame_paths_all_dict['cam0/data']))
@@ -66,8 +72,7 @@ for split in ['train', 'val']:
             label_list = frame_paths_all_dict['label0/data']
 
         output_txt_file = Path(list_path) / Path('list') / Path('%s.txt'%split)
-        if subsample_ratio_float != 1.:
-            output_txt_file = str(output_txt_file).replace('.txt', '_%s.txt'%(subsample_ratio_name_dict[subsample_ratio]))
+        output_txt_file = str(output_txt_file).replace('.txt', '_%s.txt'%(subsample_ratio_name_dict[subsample_ratio]))
 
         with open(str(output_txt_file), 'w') as text_file:
             for path_cam0, path_label in zip(im_list, label_list):
