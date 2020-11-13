@@ -29,10 +29,12 @@ def make_dataset(split='train', data_root=None, data_list=None):
         line = line.strip()
         line_split = line.split(' ')
         if split == 'test':
-            if len(line_split) != 1:
-                raise (RuntimeError("Image list file read line error : " + line + "\n"))
             image_name = os.path.join(data_root, line_split[0])
-            label_name = image_name  # just set place holder for label_name, not for use
+            if len(line_split) != 1:
+                label_name = os.path.join(data_root, line_split[1])
+                # raise (RuntimeError("Image list file read line error : " + line + "\n"))
+            else:
+                label_name = image_name  # just set place holder for label_name, not for use
         else:
             if len(line_split) != 2:
                 raise (RuntimeError("Image list file read line error : " + line + "\n"))

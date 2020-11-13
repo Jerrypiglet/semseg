@@ -60,8 +60,9 @@ Distributed:
   rank: 0
 
 TEST:
-  test_list: openrooms/list/val.txt
-  split: val  # split in [train, val and test]
+  test_list: openrooms/list/test.txt
+  test_has_gt: True
+  split: test  # split in [train, val and test]
   base_size: 2048  # based size for scaling
   resize_h_test: 240
   resize_w_test: 320

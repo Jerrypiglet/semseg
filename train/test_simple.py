@@ -3,6 +3,7 @@ import time
 import logging
 import argparse
 import sys
+from tqdm import tqdm
 
 import cv2
 import numpy as np
@@ -138,9 +139,9 @@ def main():
             logger.info("=> loaded checkpoint '{}'".format(args.model_path))
         else:
             raise RuntimeError("=> no checkpoint found at '{}'".format(args.model_path))
-        test(test_loader, test_data.data_list, model, args.classes, mean, std, args.base_size, args.test_h, args.test_w, args.scales, gray_folder, color_folder, colors)
-    if args.split != 'test':
-        cal_acc(test_data.data_list, gray_folder, args.classes, names)
+        pred_path_list, gt_path_list = test(test_loader, test_data.data_list, model, args.classes, mean, std, args.base_size, args.test_h, args.test_w, args.scales, gray_folder, color_folder, colors)
+    if args.split != 'test' or (args.split == 'test' and args.test_has_gt):
+        cal_acc(test_data.data_list, gray_folder, args.classes, names, pred_path_list=pred_path_list, gt_path_list=gt_path_list)
 
 
 # def net_process(model, image, mean, std=None, flip=False):
@@ -208,7 +209,12 @@ def test(test_loader, data_list, model, classes, mean, std, base_size, crop_h, c
     batch_time = AverageMeter()
     model.eval()
     end = time.time()
-    for i, (input, _, image_paths) in enumerate(test_loader):
+    pred_path_list = []
+    gt_path_list = []
+    check_makedirs(gray_folder)
+    check_makedirs(color_folder)
+
+    for i, (input, target, image_paths) in tqdm(enumerate(test_loader)):
         data_time.update(time.time() - end)
         # input = np.squeeze(input.numpy(), axis=0)
         # image = np.transpose(input, (1, 2, 0))
@@ -243,33 +249,52 @@ def test(test_loader, data_list, model, classes, mean, std, base_size, crop_h, c
                         'Batch {batch_time.val:.3f} ({batch_time.avg:.3f}).'.format(i + 1, len(test_loader),
                                                                                     data_time=data_time,
                                                                                     batch_time=batch_time))
-        check_makedirs(gray_folder)
-        check_makedirs(color_folder)
         gray = np.uint8(prediction)
-        color = colorize(gray, colors)
-        image_path, _ = data_list[i]
-        image_name = image_path.split('/')[-1].split('.')[0]
         gray_path = os.path.join(gray_folder, '%02d.png'%i)
-        color_path = os.path.join(color_folder, '%02d.png'%i)
+        pred_path_list.append(gray_path)
         cv2.imwrite(gray_path, gray)
-        color.save(color_path)
-        image_RGB = args.read_image(image_path, resize_to_target_size=True)
-        cv2.imwrite(color_path.replace('.png', '_RGB.png'), image_RGB)
-        print('Result saved to %s; originally from %s'%(color_path, image_path))
-        if i > 100:
-            break
+
+        if args.test_has_gt:
+            target = np.uint8(target.squeeze().cpu().numpy())
+            gray_target_path = os.path.join(gray_folder, '%02d_target.png'%i)
+            cv2.imwrite(gray_target_path, target)
+            target_path_list.append(gray_target_path)
+
+        if i <= 100:
+            color = colorize(gray, colors)
+            image_path, _ = data_list[i]
+            image_name = image_path.split('/')[-1].split('.')[0]
+            color_path = os.path.join(color_folder, '%02d.png'%i)
+            color.save(color_path)
+            image_RGB = args.read_image(image_path, resize_to_target_size=True)
+            cv2.imwrite(color_path.replace('.png', '_RGB.png'), image_RGB)
+            print('Result saved to %s; originally from %s'%(color_path, image_path))
+        # if i > 100:
+        #     break
     logger.info('<<<<<<<<<<<<<<<<< End Evaluation <<<<<<<<<<<<<<<<<')
+    
+    assert len(pred_path_list) == len(gt_path_list)
+    return pred_path_list, target_path_list
 
 
-def cal_acc(data_list, pred_folder, classes, names):
+def cal_acc(data_list, pred_folder, classes, names, pred_path_list=None, target_path_list=None):
     intersection_meter = AverageMeter()
     union_meter = AverageMeter()
     target_meter = AverageMeter()
 
     for i, (image_path, target_path) in enumerate(data_list):
         image_name = image_path.split('/')[-1].split('.')[0]
-        pred = cv2.imread(os.path.join(pred_folder, image_name+'.png'), cv2.IMREAD_GRAYSCALE)
+        if pred_path_list is not None:
+            pred_path = pred_path_list[i]
+        else:
+            pred_path = os.path.join(pred_folder, image_name+'.png')
+        pred = cv2.imread(pred_path, cv2.IMREAD_GRAYSCALE)
+        if target_path_list is not None:
+            target_path = target_path_list[i]
         target = cv2.imread(target_path, cv2.IMREAD_GRAYSCALE)
+        if i < 10:
+            print(pred_path, target_path)
+            
         intersection, union, target = intersectionAndUnion(pred, target, classes)
         intersection_meter.update(intersection)
         union_meter.update(union)
@@ -285,6 +310,7 @@ def cal_acc(data_list, pred_folder, classes, names):
 
     logger.info('Eval result: mIoU/mAcc/allAcc {:.4f}/{:.4f}/{:.4f}.'.format(mIoU, mAcc, allAcc))
     for i in range(classes):
+        print(len(iou_class), len(accuracy_class), len(names))
         logger.info('Class_{} result: iou/accuracy {:.4f}/{:.4f}, name: {}.'.format(i, iou_class[i], accuracy_class[i], names[i]))
 
 
