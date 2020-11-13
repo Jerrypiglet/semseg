@@ -126,10 +126,11 @@ class SemData(Dataset):
                 label[label!=255] = label[label!=255] + 1 # leave 0 for unlabelled
                 label[label==255] = 0
         elif 'openrooms' in self.dataset_name.lower():
-            label = np.load(label_path)
+            label = np.load(label_path) # 0 is unlabelled; valid are 1..45
+            label[label==0] = 31
             # if np.amax(label) > 42:
             #     print(np.amax(label), np.amin(label))
-            label += 1 # to make 0 as unlabelled, 1 as environment
+            # label += 1 # to make 0 as unlabelled, 1 as environment
         else:
             # label = cv2.imread(label_path, cv2.IMREAD_GRAYSCALE)  # GRAY 1 channel ndarray with shape H * W
             raise (RuntimeError("label loader not supported for %s!"%self.dataset_name))

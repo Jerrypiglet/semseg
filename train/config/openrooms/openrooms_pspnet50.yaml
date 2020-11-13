@@ -4,13 +4,13 @@ PATHS:
   project_path: . # on cluster: /viscompfs/users/ruizhu/semseg
   data_root_cluster: /siggraphasia20dataset/code/Routine/DatasetCreation
   project_path_cluster: /viscompfs/users/ruizhu/semseg
-  exp_name: pspnet50
+  exp_name: pspnet50V2
 
 DATA:
   dataset_name: 'openrooms'
   train_list: openrooms/list/train.txt
   val_list: openrooms/list/val.txt
-  classes: 44
+  classes: 46
 
 TRAIN:
   arch: psp
@@ -47,9 +47,9 @@ TRAIN:
   resume: 'none' # path to latest checkpoint (default: none)
   evaluate: True  # evaluate on validation set, extra gpu memory needed and small batch_size_val is recommend
   just_vis: False
+  if_cluster: False
   val_every_iter: 3000
   save_every_iter: 3000
-  if_cluster: False
 
 
 Distributed:

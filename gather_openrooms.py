@@ -11,8 +11,8 @@ dirs = ['main_xml', 'main_xml1',
 # print(scene_list)
 
 subset_to_prefix = {'im_RGB': 'im_', 'label_semseg': 'imsemLabel_'}
-subsample_ratio = 0.25
-subsample_ratio_name_dict = {'0.25': '100k', '0.125': '50k', '0.083': '30k', '0.025': '10k'}
+subsample_ratio = 1.
+subsample_ratio_name_dict = {'1': '100k', '0.5': '50k', '0.3': '30k', '0.1': '10k'}
 assert subsample_ratio in subsample_ratio_name_dict.keys()
 
 # for split in ['train', 'val', 'test']:
@@ -83,18 +83,24 @@ for split in ['test']:
 
     print(frame_paths_all_dict['im_RGB'][:5], frame_paths_all_dict['label_semseg'][:5])
 
-    if subsample_ratio != 1.:
-        index_list = range(len(frame_paths_all_dict['im_RGB']))
-        sample_num = int(len(index_list) * subsample_ratio)
-        index_list_sample = random.sample(index_list, sample_num)
-        frame_paths_all_dict['im_RGB'] = [frame_paths_all_dict['im_RGB'][i] for i in index_list_sample]
-        frame_paths_all_dict['label_semseg'] = [frame_paths_all_dict['label_semseg'][i] for i in index_list_sample]
+    for subsample_ratio in list(subsample_ratio_name_dict.keys()):
+        subsample_ratio_float = float(subsample_ratio)
+        if subsample_ratio_float != 1.:
+            index_list = range(len(frame_paths_all_dict['im_RGB']))
+            sample_num = int(len(index_list) * subsample_ratio_float)
+            print(sample_num, len(index_list), subsample_ratio_float)
+            index_list_sample = random.sample(index_list, sample_num)
+            im_list = [frame_paths_all_dict['im_RGB'][i] for i in index_list_sample]
+            label_list = [frame_paths_all_dict['label_semseg'][i] for i in index_list_sample]
+        else:
+            im_list = frame_paths_all_dict['im_RGB']
+            label_list = frame_paths_all_dict['label_semseg']
+
     
     output_list_path = Path(list_path) / Path('list')
     output_list_path.mkdir(parents=True, exist_ok=True)
     output_txt_file = output_list_path / Path('%s.txt'%split)
-    if subsample_ratio != 1.:
-        output_txt_file = output_txt_file.replace('.txt', '_%s.txt'%subsample_rario_name_dict[subsample_ratio])
+    output_txt_file = output_txt_file.replace('.txt', '_%s.txt'%subsample_rario_name_dict[subsample_ratio])
 
     with open(str(output_txt_file), 'w') as text_file:
         for path_cam0, path_label in zip(frame_paths_all_dict['im_RGB'], frame_paths_all_dict['label_semseg']):

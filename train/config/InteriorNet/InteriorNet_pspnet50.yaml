@@ -1,7 +1,13 @@
-DATA:
-  data_root: dataset/InteriorNet
-  dataset_name: 'InteriorNet'
+PATHS:
   data_config_path: train/data
+  data_root: dataset/InteriorNet # on cluster: /siggraphasia20dataset/code/Routine/DatasetCreation
+  project_path: . # on cluster: /viscompfs/users/ruizhu/semseg
+  data_root_cluster: /ruidata/InteriorNet_real
+  project_path_cluster: /viscompfs/users/ruizhu/semseg
+  exp_name: pspnet50
+
+DATA:
+  dataset_name: 'InteriorNet'
   train_list: InteriorNet/list/train.txt
   val_list: InteriorNet/list/val.txt
   classes: 41

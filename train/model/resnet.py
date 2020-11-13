@@ -216,8 +216,7 @@ def resnet101(pretrained=False, args=None, **kwargs):
     model = ResNet(Bottleneck, [3, 4, 23, 3], **kwargs)
     if pretrained:
         # model.load_state_dict(model_zoo.load_url(model_urls['resnet101']))
-        # if args.if_cluster:
-        model_path = path.join(args.initmodel_path, 'resnet101_v2.pth')
+        model_path = './initmodel/resnet101_v2.pth'
         if args.if_cluster:
             model_path = path.join(args.project_path, model_path)
         # if 'initmodel_path' in args:
