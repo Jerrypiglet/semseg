@@ -62,6 +62,7 @@ Distributed:
 TEST:
   test_list: openrooms/list/test.txt
   test_has_gt: True
+  test_map_nyu: False
   split: test  # split in [train, val and test]
   base_size: 2048  # based size for scaling
   resize_h_test: 240

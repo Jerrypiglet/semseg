@@ -79,6 +79,9 @@ for split in ['train', 'val', 'test']:
                 for path_cam0, path_label in zip(im_list, label_list):
                     text_file.write('%s %s\n'%(path_cam0, path_label))
     else:
+        im_list = frame_paths_all_dict['cam0/data']
+        label_list = frame_paths_all_dict['label0/data']
+
         output_txt_file = Path(list_path) / Path('list') / Path('%s.txt'%split)
 
         with open(str(output_txt_file), 'w') as text_file:
