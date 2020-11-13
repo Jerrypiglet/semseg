@@ -58,21 +58,28 @@ for split in ['train', 'val', 'test']:
 
     print(frame_paths_all_dict['cam0/data'][:5], frame_paths_all_dict['label0/data'][:5])
 
-    for subsample_ratio in list(subsample_ratio_name_dict.keys()):
-        subsample_ratio_float = float(subsample_ratio)
-        if subsample_ratio_float != 1.:
-            index_list = range(len(frame_paths_all_dict['cam0/data']))
-            sample_num = int(len(index_list) * subsample_ratio_float)
-            print(sample_num, len(index_list), subsample_ratio_float)
-            index_list_sample = random.sample(index_list, sample_num)
-            im_list = [frame_paths_all_dict['cam0/data'][i] for i in index_list_sample]
-            label_list = [frame_paths_all_dict['label0/data'][i] for i in index_list_sample]
-        else:
-            im_list = frame_paths_all_dict['cam0/data']
-            label_list = frame_paths_all_dict['label0/data']
+    if split == 'train':
+        for subsample_ratio in list(subsample_ratio_name_dict.keys()):
+            subsample_ratio_float = float(subsample_ratio)
+            if subsample_ratio_float != 1.:
+                index_list = range(len(frame_paths_all_dict['cam0/data']))
+                sample_num = int(len(index_list) * subsample_ratio_float)
+                print(sample_num, len(index_list), subsample_ratio_float)
+                index_list_sample = random.sample(index_list, sample_num)
+                im_list = [frame_paths_all_dict['cam0/data'][i] for i in index_list_sample]
+                label_list = [frame_paths_all_dict['label0/data'][i] for i in index_list_sample]
+            else:
+                im_list = frame_paths_all_dict['cam0/data']
+                label_list = frame_paths_all_dict['label0/data']
 
+            output_txt_file = Path(list_path) / Path('list') / Path('%s.txt'%split)
+            output_txt_file = str(output_txt_file).replace('.txt', '_%s.txt'%(subsample_ratio_name_dict[subsample_ratio]))
+
+            with open(str(output_txt_file), 'w') as text_file:
+                for path_cam0, path_label in zip(im_list, label_list):
+                    text_file.write('%s %s\n'%(path_cam0, path_label))
+    else:
         output_txt_file = Path(list_path) / Path('list') / Path('%s.txt'%split)
-        output_txt_file = str(output_txt_file).replace('.txt', '_%s.txt'%(subsample_ratio_name_dict[subsample_ratio]))
 
         with open(str(output_txt_file), 'w') as text_file:
             for path_cam0, path_label in zip(im_list, label_list):

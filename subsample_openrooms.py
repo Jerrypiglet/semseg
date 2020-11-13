@@ -7,7 +7,7 @@ list_path = Path('train/data/openrooms/list')
 
 subsample_ratio_name_dict = {'1': '100k', '0.5': '50k', '0.3': '30k', '0.1': '10k'}
 
-for split in ['train', 'val']:
+for split in ['train']:
     trainFile = list_path / (split + ".txt")
     with open(trainFile, 'r') as fIn:
         trainList = fIn.readlines()
