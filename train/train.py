@@ -19,16 +19,15 @@ from tensorboardX import SummaryWriter
 
 from util import dataset, transform, config
 from util.util import AverageMeter, poly_learning_rate, intersectionAndUnionGPU, find_free_port, colorize
+from util.utils_dataset import map_openrooms_nyu_gpu,map_openrooms_nyu
 
 cv2.ocl.setUseOpenCL(False)
 cv2.setNumThreads(0)
 
-
-
-
 def get_parser():
     parser = argparse.ArgumentParser(description='PyTorch Semantic Segmentation')
     parser.add_argument('--config', type=str, default='config/ade20k/ade20k_pspnet50.yaml', help='config file')
+    # parser.add_argument("--if_remove_cls", type=str2bool, nargs='?', const=True, default=False)
     parser.add_argument('opts', help='see config/ade20k/ade20k_pspnet50.yaml for all options', default=None, nargs=argparse.REMAINDER)
     args = parser.parse_args()
     assert args.config is not None
@@ -83,6 +82,11 @@ def check(args):
 
 def main():
     args = get_parser()
+    if args.test_in_nyu_label_space:
+        args.colors_path = 'nyu/nyu_colors.txt'
+        args.names_path = 'nyu/nyu_names.txt'
+        args.classes = 41
+
     if args.if_cluster:
         args.data_root = args.data_root_cluster
         args.project_path = args.project_path_cluster
@@ -192,8 +196,22 @@ def main_worker(gpu, ngpus_per_node, argss):
             # checkpoint = torch.load(args.resume)
             checkpoint = torch.load(args.resume, map_location=lambda storage, loc: storage.cuda())
             args.start_epoch = checkpoint['epoch']
-            model.load_state_dict(checkpoint['state_dict'])
-            optimizer.load_state_dict(checkpoint['optimizer'])
+            # model.load_state_dict(checkpoint['state_dict'])
+            # optimizer.load_state_dict(checkpoint['optimizer'])
+            # print(checkpoint['optimizer'].keys())
+            if args.if_remove_cls:
+                if main_process():
+                    logger.info('=====!!!!!!!===== Remove cls layer in resuming...')
+                checkpoint['state_dict'] = {x: checkpoint['state_dict'][x] for x in checkpoint['state_dict'].keys() if ('module.cls' not in x and 'module.aux' not in x)}
+                # checkpoint['optimizer'] = {x: checkpoint['optimizer'][x] for x in checkpoint['optimizer'].keys() if ('module.cls' not in x and 'module.aux' not in x)}
+                # if main_process():
+                #     print('----', checkpoint['state_dict'].keys())
+                #     print('----', checkpoint['optimizer'].keys())
+                #     print('----1', checkpoint['optimizer']['state'].keys())
+
+            model.load_state_dict(checkpoint['state_dict'], strict=False)
+            if not args.if_remove_cls:
+                optimizer.load_state_dict(checkpoint['optimizer'])
             if main_process():
                 logger.info("=> loaded checkpoint '{}' (epoch {})".format(args.resume, checkpoint['epoch']))
         else:
@@ -338,6 +356,9 @@ def train(train_loader, model, optimizer, epoch, epoch_log, val_loader, criterio
             target = F.interpolate(target.unsqueeze(1).float(), size=(h, w), mode='bilinear', align_corners=True).squeeze(1).long()
         input = input.cuda(non_blocking=True)
         target = target.cuda(non_blocking=True)
+        # if args.test_in_nyu_label_space:
+        #     target = map_openrooms_nyu_gpu(target)
+
         output, main_loss, aux_loss = model(input, target)
         if not args.multiprocessing_distributed:
             main_loss, aux_loss = torch.mean(main_loss), torch.mean(aux_loss)
@@ -355,6 +376,9 @@ def train(train_loader, model, optimizer, epoch, epoch_log, val_loader, criterio
             n = count.item()
             main_loss, aux_loss, loss = main_loss / n, aux_loss / n, loss / n
 
+        # if args.test_in_nyu_label_space:
+        #     intersection, union, target = intersectionAndUnionGPU(map_openrooms_nyu_gpu(output), map_openrooms_nyu_gpu(target), 41, args.ignore_label)
+        # else:
         intersection, union, target = intersectionAndUnionGPU(output, target, args.classes, args.ignore_label)
         if args.multiprocessing_distributed:
             dist.all_reduce(intersection), dist.all_reduce(union), dist.all_reduce(target)

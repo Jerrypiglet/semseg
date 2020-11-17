@@ -1,0 +1,7 @@
+image/test/00844.png seg40/test/00844.png
+image/test/00802.png seg40/test/00802.png
+image/test/00445.png seg40/test/00445.png
+image/test/01176.png seg40/test/01176.png
+image/test/00688.png seg40/test/00688.png
+image/test/00774.png seg40/test/00774.png
+image/test/01413.png seg40/test/01413.png

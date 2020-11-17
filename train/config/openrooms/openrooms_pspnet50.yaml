@@ -8,9 +8,12 @@ PATHS:
 
 DATA:
   dataset_name: 'openrooms'
+  dataset_name_pred: 'openrooms'
   train_list: openrooms/list/train.txt
   val_list: openrooms/list/val.txt
   classes: 46
+  if_remove_cls: False
+
 
 TRAIN:
   arch: psp
@@ -50,7 +53,7 @@ TRAIN:
   if_cluster: False
   val_every_iter: 3000
   save_every_iter: 3000
-
+  train_in_nyu_label_space: False
 
 Distributed:
   dist_url: tcp://127.0.0.1:6789
@@ -62,7 +65,7 @@ Distributed:
 TEST:
   test_list: openrooms/list/test.txt
   test_has_gt: True
-  test_map_nyu: False
+  test_in_nyu_label_space: False
   split: test  # split in [train, val and test]
   base_size: 2048  # based size for scaling
   resize_h_test: 240

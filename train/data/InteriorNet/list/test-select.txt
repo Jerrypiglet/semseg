@@ -1,0 +1,3 @@
+3FO4ITXRB8MG_Guest_room/cam0/data/19.png
+3FO4M94SQD7P_Bedroom/cam0/data/2.png 3FO4M94SQD7P_Bedroom/label0/data/2_nyu.png
+3FO4JS0W2K3S_Bedroom/cam0/data/7.png 3FO4JS0W2K3S_Bedroom/label0/data/7_nyu.png

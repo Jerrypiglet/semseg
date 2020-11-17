@@ -38,7 +38,7 @@ spec:
             nvidia.com/gpu: '#GPUS'
           limits:
             cpu: "10"
-            memory: "50Gi"
+            memory: "20Gi"
             nvidia.com/gpu: '#GPUS'
         volumeMounts:
           - name: dshm

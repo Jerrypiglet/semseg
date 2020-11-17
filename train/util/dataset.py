@@ -78,7 +78,7 @@ class SemData(Dataset):
         image = self.read_image(image_path)
         # print(image_path)
         label = self.read_label(label_path)
-        # print(np.amax(label), np.amin(label), np.median(label), label.shape, label.dtype, label_path)
+        # print(np.amax(label), np.amin(label), np.median(label), label.sh`ape, label.dtype, label_path)
 
         if image is None:
             raise (RuntimeError("Image is NONE: " + image_path + "\n"))
@@ -134,6 +134,9 @@ class SemData(Dataset):
         else:
             # label = cv2.imread(label_path, cv2.IMREAD_GRAYSCALE)  # GRAY 1 channel ndarray with shape H * W
             raise (RuntimeError("label loader not supported for %s!"%self.dataset_name))
+
+            if args.train_in_nyu_label_space:
+                label = map_openrooms_nyu(label)
 
         return label
 

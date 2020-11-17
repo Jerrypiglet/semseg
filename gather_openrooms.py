@@ -15,8 +15,8 @@ subset_to_prefix = {'im_RGB': 'im_', 'label_semseg': 'imsemLabel_'}
 # subsample_ratio_name_dict = {'1': '100k', '0.5': '50k', '0.3': '30k', '0.1': '10k'}
 # assert subsample_ratio in subsample_ratio_name_dict.keys()
 
-for split in ['train', 'val', 'test']:
-# for split in ['test']:
+# for split in ['train', 'val', 'test']:
+for split in ['test']:
     if split in ['train', 'val']:
         dataset_path = 'dataset/openrooms'
         scene_file = os.path.join(dataset_path, 'train.txt')
@@ -61,7 +61,7 @@ for split in ['train', 'val', 'test']:
             frame_paths = [x for _,x in sorted(zip(frame_names, frame_paths))]
             # print('=====', subset, frame_name_prefix, frame_paths, frame_ids)
             if subset == 'label_semseg':
-                frame_paths = [x.replace('mainDiffLight', 'main').replace('mainDiffMat', 'main').replace('imsemLabel', 'imsemLabel2') for x in frame_paths]
+                frame_paths = [x.replace('mainDiffLight', 'main').replace('mainDiffMat', 'main').replace('imsemLabel', 'imsemLabel') for x in frame_paths]
             frame_paths_dict[subset] = frame_paths
         # print(frame_paths_dict['im_RGB'])
         # print(frame_paths_dict['label_semseg'])
@@ -82,8 +82,20 @@ for split in ['train', 'val', 'test']:
     for subset in ['im_RGB', 'label_semseg']:
         random.seed(123456)
         random.shuffle(frame_paths_all_dict[subset])
-
+    
     print(frame_paths_all_dict['im_RGB'][:5], frame_paths_all_dict['label_semseg'][:5])
+
+    if split == 'test':
+        dataset_path = 'dataset/openrooms_test'
+        print('Filtering out non-existent files...', dataset_path)
+        x_list, y_list = [], []
+        for x, y in tqdm(zip(frame_paths_all_dict['im_RGB'], frame_paths_all_dict['label_semseg'])):
+            print(os.path.join(dataset_path, x), os.path.join(dataset_path, y.replace('imsemLabel_', 'imsemLabel2_')))
+            if os.path.isfile(os.path.join(dataset_path, x)) and os.path.isfile(os.path.join(dataset_path, y)):
+                x_list.append(x)
+                y_list.append(y)
+        frame_paths_all_dict['im_RGB'], frame_paths_all_dict['label_semseg'] = x_list, y_list
+
 
     # for subsample_ratio in list(subsample_ratio_name_dict.keys()):
     #     subsample_ratio_float = float(subsample_ratio)
@@ -107,5 +119,5 @@ for split in ['train', 'val', 'test']:
     with open(str(output_txt_file), 'w') as text_file:
         for path_cam0, path_label in zip(frame_paths_all_dict['im_RGB'], frame_paths_all_dict['label_semseg']):
             text_file.write('%s %s\n'%(path_cam0, path_label))
-    print('Wrote to %s'%output_txt_file)
+    print('Wrote %d entries to %s'%(len(frame_paths_all_dict['im_RGB']), output_txt_file))
     

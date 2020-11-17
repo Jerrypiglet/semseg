@@ -15,6 +15,7 @@ import torch.utils.data
 
 from util import dataset, transform, config
 from util.util import AverageMeter, intersectionAndUnion, check_makedirs, colorize
+from util.utils_dataset import map_to_nyu
 
 cv2.ocl.setUseOpenCL(False)
 
@@ -69,6 +70,10 @@ def check(args):
 def main():
     global args, logger
     args = get_parser()
+    if args.test_in_nyu_label_space:
+        args.colors_path = 'nyu/nyu_colors.txt'
+        args.names_path = 'nyu/nyu_names.txt'
+
     if args.if_cluster:
         args.data_root = args.data_root_cluster
         args.project_path = args.project_path_cluster
@@ -139,9 +144,9 @@ def main():
             logger.info("=> loaded checkpoint '{}'".format(args.model_path))
         else:
             raise RuntimeError("=> no checkpoint found at '{}'".format(args.model_path))
-        pred_path_list, gt_path_list = test(test_loader, test_data.data_list, model, args.classes, mean, std, args.base_size, args.test_h, args.test_w, args.scales, gray_folder, color_folder, colors)
+        pred_path_list, target_path_list = test(test_loader, test_data.data_list, model, args.classes, mean, std, args.base_size, args.test_h, args.test_w, args.scales, gray_folder, color_folder, colors)
     if args.split != 'test' or (args.split == 'test' and args.test_has_gt):
-        cal_acc(test_data.data_list, gray_folder, args.classes, names, pred_path_list=pred_path_list, gt_path_list=gt_path_list)
+        cal_acc(test_data.data_list, gray_folder, args.classes, names, pred_path_list=pred_path_list, target_path_list=target_path_list)
 
 
 # def net_process(model, image, mean, std=None, flip=False):
@@ -210,7 +215,7 @@ def test(test_loader, data_list, model, classes, mean, std, base_size, crop_h, c
     model.eval()
     end = time.time()
     pred_path_list = []
-    gt_path_list = []
+    target_path_list = []
     check_makedirs(gray_folder)
     check_makedirs(color_folder)
 
@@ -250,12 +255,17 @@ def test(test_loader, data_list, model, classes, mean, std, base_size, crop_h, c
                                                                                     data_time=data_time,
                                                                                     batch_time=batch_time))
         gray = np.uint8(prediction)
+        if args.test_in_nyu_label_space:
+            gray = map_to_nyu(gray, args.dataset_name_pred)
+
         gray_path = os.path.join(gray_folder, '%02d.png'%i)
         pred_path_list.append(gray_path)
         cv2.imwrite(gray_path, gray)
 
         if args.test_has_gt:
             target = np.uint8(target.squeeze().cpu().numpy())
+            if args.test_in_nyu_label_space:
+                target = map_to_nyu(target, args.dataset_name)
             gray_target_path = os.path.join(gray_folder, '%02d_target.png'%i)
             cv2.imwrite(gray_target_path, target)
             target_path_list.append(gray_target_path)
@@ -268,12 +278,15 @@ def test(test_loader, data_list, model, classes, mean, std, base_size, crop_h, c
             color.save(color_path)
             image_RGB = args.read_image(image_path, resize_to_target_size=True)
             cv2.imwrite(color_path.replace('.png', '_RGB.png'), image_RGB)
+            target_color = colorize(target, colors)
+            color_path = os.path.join(color_folder, '%02d_GT.png'%i)
+            target_color.save(color_path)
             print('Result saved to %s; originally from %s'%(color_path, image_path))
         # if i > 100:
         #     break
     logger.info('<<<<<<<<<<<<<<<<< End Evaluation <<<<<<<<<<<<<<<<<')
     
-    assert len(pred_path_list) == len(gt_path_list)
+    assert len(pred_path_list) == len(target_path_list)
     return pred_path_list, target_path_list
 
 
@@ -281,6 +294,9 @@ def cal_acc(data_list, pred_folder, classes, names, pred_path_list=None, target_
     intersection_meter = AverageMeter()
     union_meter = AverageMeter()
     target_meter = AverageMeter()
+
+    if args.test_in_nyu_label_space:
+        classes = 41
 
     for i, (image_path, target_path) in enumerate(data_list):
         image_name = image_path.split('/')[-1].split('.')[0]
@@ -294,8 +310,8 @@ def cal_acc(data_list, pred_folder, classes, names, pred_path_list=None, target_
         target = cv2.imread(target_path, cv2.IMREAD_GRAYSCALE)
         if i < 10:
             print(pred_path, target_path)
-            
-        intersection, union, target = intersectionAndUnion(pred, target, classes)
+
+        intersection, union, target = intersectionAndUnion(pred, target, classes, args.ignore_label)
         intersection_meter.update(intersection)
         union_meter.update(union)
         target_meter.update(target)
